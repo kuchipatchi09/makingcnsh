@@ -1,0 +1,160 @@
+ <!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAKING DEPT. | 멘토 연결 시스템</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+    <style>
+        :root {
+            --primary: #0A84FF; --bg: #000000; --card: #1C1C1E;
+            --text-main: #FFFFFF; --text-sub: #A1A1A6; --border: #38383A;
+            /* 분야별 포인트 컬러 */
+            --math: #FF3B30; --phys: #FF9F0A; --chem: #FFD60A; 
+            --bio: #34C759; --earth: #64D2FF; --info: #5E5CE6; --ipsi: #BF5AF2;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Pretendard', sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); }
+
+        header { background: rgba(28, 28, 30, 0.8); backdrop-filter: blur(20px); padding: 40px 20px; text-align: center; border-bottom: 1px solid var(--border); sticky: top; }
+        header h1 { font-size: 1.8rem; letter-spacing: -0.5px; margin-bottom: 8px; }
+        header p { color: var(--text-sub); font-size: 0.9rem; }
+
+        nav { 
+            display: flex; justify-content: center; gap: 8px; padding: 20px; 
+            overflow-x: auto; background: var(--bg); border-bottom: 1px solid var(--border);
+        }
+        .category-btn {
+            padding: 8px 16px; border: 1px solid var(--border); border-radius: 20px;
+            background: var(--card); color: var(--text-sub); cursor: pointer; 
+            white-space: nowrap; transition: 0.2s; font-size: 0.85rem;
+        }
+        .category-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px 50px; }
+        .mentor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        
+        .mentor-card {
+            background: var(--card); border-radius: 20px; padding: 25px;
+            border: 1px solid var(--border); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .mentor-card:hover { transform: scale(1.02); border-color: var(--primary); }
+
+        .top-line { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .subject-tag { padding: 4px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+        
+        .name { font-size: 1.3rem; font-weight: 700; margin-bottom: 4px; }
+        .role { color: var(--primary); font-size: 0.85rem; font-weight: 600; margin-bottom: 15px; }
+        .desc { color: var(--text-sub); font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px; min-height: 3rem; }
+
+        .action-area { border-top: 1px solid var(--border); pt: 15px; }
+        .contact-btn {
+            width: 100%; padding: 12px; border: none; border-radius: 12px;
+            background: #3A3A3C; color: #fff; font-weight: 700; cursor: pointer; transition: 0.2s;
+        }
+        .contact-btn:hover { background: var(--primary); }
+        
+        .id-display { 
+            display: none; padding: 12px; background: rgba(10, 132, 255, 0.1); 
+            border: 1px solid var(--primary); border-radius: 12px; text-align: center; 
+            font-weight: 800; color: var(--primary); margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>MAKING DEPT. MENTORING</h1>
+    <p>선배들의 경험과 지식을 공유받으세요.</p>
+</header>
+
+<nav id="nav">
+    <button class="category-btn active" onclick="filter('all')">전체</button>
+    <button class="category-btn" onclick="filter('수학')">수학</button>
+    <button class="category-btn" onclick="filter('물리')">물리</button>
+    <button class="category-btn" onclick="filter('화학')">화학</button>
+    <button class="category-btn" onclick="filter('생명')">생명</button>
+    <button class="category-btn" onclick="filter('지구')">지구</button>
+    <button class="category-btn" onclick="filter('정보')">정보</button>
+    <button class="category-btn" onclick="filter('입시')">입시</button>
+</nav>
+
+<div class="container">
+    <div class="mentor-grid" id="list"></div>
+</div>
+
+<script>
+    const data = [
+        // 수학
+        { n: "강민준", s: "수학", r: "졸업생 (S대 수리과학부)", d: "심화 미적분 및 정수론 연구 설계 조언 가능", k: "math_kmj" },
+        { n: "박서윤", s: "수학", r: "3학년 (수학 학술 동아리장)", d: "수리 통계 분석 및 그래프 이론 기초 멘토링", k: "sy_math00" },
+        { n: "최진우", s: "수학", r: "2학년 (KMO 입상자)", d: "기하학적 문제 해결 및 R&E 증명 과정 보조", k: "jinu_solve" },
+        // 물리
+        { n: "이현우", s: "물리", r: "졸업생 (K대 물리학과)", d: "전자기학 실험 장치 설계 및 오류 분석 지원", k: "phys_hw" },
+        { n: "김도윤", s: "물리", r: "3학년 (물리 경시 준비)", d: "역학 시뮬레이션 및 데이터 해석 방법 공유", k: "doyun_physics" },
+        { n: "한지호", s: "물리", r: "2학년 (아두이노 마스터)", d: "센서 데이터를 활용한 물리 실험 자동화 구축", k: "jiho_maker" },
+        // 화학
+        { n: "윤하은", s: "화학", r: "졸업생 (Y대 화학과)", d: "유기 합성 및 분석 화학 논문 작성 팁 전수", k: "chem_haeun" },
+        { n: "송준혁", s: "화학", r: "3학년 (화학 실험 기장)", d: "화학 반응 속도론 실험 설계 및 시약 관리", k: "jh_chem_ex" },
+        { n: "임소희", s: "화학", r: "2학년 (분석 장비 운용)", d: "분광 광도계 및 PH 미터 정밀 측정법 도움", k: "sohee_c" },
+        // 생명
+        { n: "장민서", s: "생명", r: "졸업생 (S대 생명공학)", d: "분자 생물학 실험 및 유전자 분석 가이드", k: "bio_minseo" },
+        { n: "오유진", s: "생명", r: "3학년 (생명과학 연구원)", d: "미생물 배양 및 효소 활성 실험 설계 지원", k: "ujin_bio" },
+        { n: "백승현", s: "생명", r: "2학년 (해부학 소모임)", d: "생태 조사 방법론 및 현장 연구 자료 공유", k: "sh_bio_lab" },
+        // 지구
+        { n: "권태영", s: "지구", r: "졸업생 (천문우주학과)", d: "천체 관측 데이터 처리 및 기상 분석 도구 활용", k: "astro_ty" },
+        { n: "서지민", s: "지구", r: "3학년 (지구과학 기장)", d: "지질학 표본 분석 및 GIS 맵핑 기본 가이드", k: "earth_jimin" },
+        { n: "황보름", s: "지구", r: "2학년 (기상 관측반)", d: "대기 오염 데이터 수집 및 그래프 시각화 도움", k: "boreum_e" },
+        // 정보
+        { n: "정태양", s: "정보", r: "졸업생 (IT 보안 전문가)", d: "파이썬 웹 크롤링 및 데이터 전처리 자동화", k: "sun_dev" },
+        { n: "조성우", s: "정보", r: "3학년 (앱 개발자)", d: "연구용 인터페이스 제작 및 데이터베이스 연동", k: "sw_build" },
+        { n: "유지혜", s: "정보", r: "2학년 (AI 알고리즘반)", d: "딥러닝 모델 구현 및 논문 구현 코드 리뷰", k: "jihye_ai" },
+        // 입시
+        { n: "성시경", s: "입시", r: "졸업생 (의예과 합격)", d: "중점 학교 맞춤형 생기부 관리 및 자소서 상담", k: "ipsi_sky" },
+        { n: "이지아", s: "입시", r: "졸업생 (공과대학 합격)", d: "연구 활동 중심의 면접 준비 및 포트폴리오 정리", k: "zia_prep" },
+        { n: "강동원", s: "입시", r: "3학년 (입시 전략팀)", d: "선배들의 합격 사례 분석 및 시간 관리 멘토링", k: "dw_strategy" }
+    ];
+
+    const colors = { "수학":"var(--math)", "물리":"var(--phys)", "화학":"var(--chem)", "생명":"var(--bio)", "지구":"var(--earth)", "정보":"var(--info)", "입시":"var(--ipsi)" };
+
+    function filter(sub) {
+        document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        render(sub);
+    }
+
+    function render(sub = 'all') {
+        const list = document.getElementById('list');
+        list.innerHTML = '';
+        data.forEach((m, i) => {
+            if (sub !== 'all' && m.s !== sub) return;
+            const card = document.createElement('div');
+            card.className = 'mentor-card';
+            card.innerHTML = `
+                <div class="top-line">
+                    <span class="subject-tag" style="background:${colors[m.s]}22; color:${colors[m.s]}">${m.s}</span>
+                </div>
+                <div class="name">${m.n}</div>
+                <div class="role">${m.r}</div>
+                <div class="desc">${m.d}</div>
+                <div class="action-area">
+                    <button class="contact-btn" id="btn-${i}" onclick="show('${i}')">카카오톡 ID 확인하기</button>
+                    <div class="id-display" id="id-${i}">ID: ${m.k}</div>
+                </div>
+            `;
+            list.appendChild(card);
+        });
+    }
+
+    function show(i) {
+        if(confirm("개인 연락처이므로 연구 목적으로만 사용해 주세요.\n해당 학우에게 연락하시겠습니까?")) {
+            document.getElementById(`btn-${i}`).style.display = 'none';
+            document.getElementById(`id-${i}`).style.display = 'block';
+        }
+    }
+
+    render();
+</script>
+
+</body>
+</html>
