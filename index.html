@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -16,7 +16,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Pretendard', sans-serif; }
         body { background-color: var(--bg); color: var(--text-main); }
 
-        header { background: rgba(28, 28, 30, 0.8); backdrop-filter: blur(20px); padding: 40px 20px; text-align: center; border-bottom: 1px solid var(--border); sticky: top; }
+        header { background: rgba(28, 28, 30, 0.8); backdrop-filter: blur(20px); padding: 40px 20px; text-align: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
         header h1 { font-size: 1.8rem; letter-spacing: -0.5px; margin-bottom: 8px; }
         header p { color: var(--text-sub); font-size: 0.9rem; }
 
@@ -37,28 +37,53 @@
         .mentor-card {
             background: var(--card); border-radius: 20px; padding: 25px;
             border: 1px solid var(--border); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column;
         }
-        .mentor-card:hover { transform: scale(1.02); border-color: var(--primary); }
+        .mentor-card:hover { transform: translateY(-5px); border-color: var(--primary); }
 
         .top-line { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
         .subject-tag { padding: 4px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
         
         .name { font-size: 1.3rem; font-weight: 700; margin-bottom: 4px; }
         .role { color: var(--primary); font-size: 0.85rem; font-weight: 600; margin-bottom: 15px; }
-        .desc { color: var(--text-sub); font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px; min-height: 3rem; }
+        .desc { color: var(--text-sub); font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px; flex-grow: 1; }
 
-        .action-area { border-top: 1px solid var(--border); pt: 15px; }
+        .action-area { border-top: 1px solid var(--border); padding-top: 15px; }
         .contact-btn {
             width: 100%; padding: 12px; border: none; border-radius: 12px;
             background: #3A3A3C; color: #fff; font-weight: 700; cursor: pointer; transition: 0.2s;
         }
         .contact-btn:hover { background: var(--primary); }
-        
-        .id-display { 
-            display: none; padding: 12px; background: rgba(10, 132, 255, 0.1); 
-            border: 1px solid var(--primary); border-radius: 12px; text-align: center; 
-            font-weight: 800; color: var(--primary); margin-top: 10px;
+
+        /* 모달 팝업 CSS */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px);
+            z-index: 1000; justify-content: center; align-items: center;
         }
+        .modal {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 20px; padding: 30px; max-width: 350px; width: 90%;
+            text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: popIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes popIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal h2 { font-size: 1.3rem; margin-bottom: 12px; color: var(--text-main); }
+        .modal p { color: var(--text-sub); font-size: 0.9rem; margin-bottom: 25px; line-height: 1.5; word-break: keep-all; }
+        .modal-buttons { display: flex; gap: 10px; }
+        .btn-cancel {
+            flex: 1; padding: 12px; border: none; border-radius: 12px;
+            background: #3A3A3C; color: #fff; font-weight: 700; cursor: pointer; transition: 0.2s;
+        }
+        .btn-agree {
+            flex: 1; padding: 12px; border: none; border-radius: 12px;
+            background: var(--primary); color: #fff; font-weight: 700; cursor: pointer; transition: 0.2s;
+        }
+        .btn-cancel:hover { background: #505052; }
+        .btn-agree:hover { background: #0070D6; }
     </style>
 </head>
 <body>
@@ -83,36 +108,52 @@
     <div class="mentor-grid" id="list"></div>
 </div>
 
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <h2>안내 및 동의</h2>
+        <p>멘토링 매칭을 위해 연구 목적으로만 활용해주시길 바랍니다.<br>신청 폼으로 이동하시겠습니까?</p>
+        <div class="modal-buttons">
+            <button class="btn-cancel" onclick="closeModal()">취소</button>
+            <button class="btn-agree" onclick="goToForm()">동의 후 신청</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const data = [
         // 수학
-        { n: "홍길동", s: "수학", r: "졸업생 (S대 수리과학부)", d: "심화 미적분 및 정수론 연구 설계 조언 가능", k: "123456789" },
-        { n: "장윤호", s: "수학", r: "3학년 (수학 학술 동아리장)", d: "수리 통계 분석 및 그래프 이론 기초 멘토링", k: "123456789" },
-        { n: "최현수", s: "수학", r: "2학년 (45도 기장)", d: "기하학적 문제 해결 및 R&E 증명 과정 보조", k: "123456789" },
+        { n: "장윤호", s: "수학", r: "31기", d: "사이클로이드 이해 및 R&E 우수상 경험 기반 창의적 수학 탐구 지원" },
+        { n: "이현서", s: "수학", r: "31기", d: "수학적 모델링, 수식 간략화, 미분방정식 풀이 및 시각화 도구 활용 지원" },
+        { n: "이주호", s: "수학", r: "31기", d: "프로그래밍 기반 시뮬레이션 제작 및 다양한 도구(QGIS, 아두이노 등) 활용 지원" },
+        { n: "정상수", s: "수학", r: "31기", d: "레이저 커팅 도안 제작 및 아두이노 회로 구성 가능" },
         // 물리
-        { n: "최현수", s: "물리", r: "졸업생 (K대 물리학과)", d: "전자기학 실험 장치 설계 및 오류 분석 지원", k: "123456789" },
-        { n: "김도윤", s: "물리", r: "3학년 (물리 경시 준비)", d: "역학 시뮬레이션 및 데이터 해석 방법 공유", k: "123456789" },
-        { n: "안정환", s: "물리", r: "2학년 (아두이노 마스터)", d: "센서 데이터를 활용한 물리 실험 자동화 구축", k: "123456789" },
+        { n: "최윤서", s: "물리", r: "31기", d: "광학 기기 사용, 울프람/블렌더/3D프린팅 활용, 논문 작성 및 R&E·전람회 준비 전반 지원" },
+        { n: "맹민규", s: "물리", r: "32기", d: "광학 기기 사용 및 데이터 코딩 처리, 보고서 작성과 발표 준비 지원" },
+        { n: "우진우", s: "물리", r: "31기", d: "파스코 센서 활용, 3D 모델링 및 논문 구조화 지원" },
         // 화학
-        { n: "홍길순", s: "화학", r: "졸업생 (Y대 화학과)", d: "유기 합성 및 분석 화학 논문 작성 팁 전수", k: "123456789" },
-        { n: "대자민", s: "화학", r: "3학년 (화학 실험 기장)", d: "화학 반응 속도론 실험 설계 및 시약 관리", k: "123456789" },
-        { n: "맹민규", s: "화학", r: "2학년 (분석 장비 운용)", d: "분광 광도계 및 PH 미터 정밀 측정법 도움", k: "123456789" },
-        // 생명
-        { n: "최준영", s: "생명", r: "졸업생 (S대 생명공학)", d: "분자 생물학 실험 및 유전자 분석 가이드", k: "123456789" },
-        { n: "박현준", s: "생명", r: "3학년 (생명과학 연구원)", d: "미생물 배양 및 효소 활성 실험 설계 지원", k: "123456789" },
-        { n: "박현진", s: "생명", r: "2학년 (해부학 소모임)", d: "생태 조사 방법론 및 현장 연구 자료 공유", k: "123456789" },
-        // 지구
-        { n: "이재형", s: "지구", r: "졸업생 (천문우주학과)", d: "천체 관측 데이터 처리 및 기상 분석 도구 활용", k: "123456789" },
-        { n: "홍홍홍", s: "지구", r: "3학년 (지구과학 기장)", d: "지질학 표본 분석 및 GIS 맵핑 기본 가이드", k: "123456789" },
-        { n: "최지헌", s: "지구", r: "2학년 (기상 관측반)", d: "대기 오염 데이터 수집 및 그래프 시각화 도움", k: "123456789" },
+        { n: "이주환", s: "화학", r: "31기", d: "AAS·UV-VIS·UTM 등 기기 사용 및 실험 프로토콜, 대회·보고서 작성까지 전반 지원" },
+        { n: "이도헌", s: "화학", r: "31기", d: "다양한 분석기기(AAS, HPLC, SEM 등) 및 시뮬레이션 활용, 다수 대회 경험 기반 연구·발표 및 융합 연구 지원" },
+        { n: "오지원", s: "화학", r: "32기", d: "AAS 기기 활용 지원" },
+        // 생명(생물)
+        { n: "성지원", s: "생명", r: "31기", d: "SEM 및 다양한 생명 실험 기기 사용, 배양·추출 등 실험법과 논문 작성 지원" },
+        { n: "김지후", s: "생명", r: "32기", d: "전기 관련 실험 기구 조작 및 제작, 아이디어 제공 및 멘토링" },
+        // 지구(지구과학)
+        { n: "김주혜", s: "지구", r: "31기", d: "천문대 장비 사용, 관측 데이터 분석 및 원격관측, 연구 계획 검토 지원" },
+        { n: "이재원", s: "지구", r: "31기", d: "3D 모델링 및 무한상상 활동 지원" },
+        { n: "이재형", s: "지구", r: "32기", d: "천체 관측·촬영 및 천체 사진 보정 지원" },
         // 정보
-        { n: "유현규", s: "정보", r: "졸업생 (IT 보안 전문가)", d: "파이썬 웹 크롤링 및 데이터 전처리 자동화", k: "123456789" },
-        { n: "황석현", s: "정보", r: "3학년 (앱 개발자)", d: "연구용 인터페이스 제작 및 데이터베이스 연동", k: "123456789" },
-        { n: "송인우", s: "정보", r: "2학년 (AI 알고리즘반)", d: "딥러닝 모델 구현 및 논문 구현 코드 리뷰", k: "123456789" },
-        // 입시
-        { n: "박승호", s: "입시", r: "졸업생 (고대 반시공)", d: "중점 학교 맞춤형 생기부 관리 및 자소서 상담", k: "123456789" },
-        { n: "유민혁", s: "입시", r: "졸업생 (포스텍)", d: "연구 활동 중심의 면접 준비 및 포트폴리오 정리", k: "123456789" },
-        { n: "장윤호", s: "입시", r: "3학년 (입시 전략팀)", d: "선배들의 합격 사례 분석 및 시간 관리 멘토링", k: "123456789" }
+        { n: "유현규", s: "정보", r: "31기", d: "딥러닝, 임베디드(아두이노·라즈베리파이·ESP32), 3D 모델링 지원" },
+        { n: "이승현", s: "정보", r: "31기", d: "딥러닝 모델 설계, 데이터 전처리 및 AI 연구 방향 제시" },
+        { n: "권원준", s: "정보", r: "32기", d: "데이터 기반 탐구 및 분석 지원" },
+        { n: "황석현", s: "정보", r: "32기", d: "연구에 필요한 여러 형태의 웹사이트 제작 지원" },
+        // 입시(대입/컨설팅) - 상세 설명이 없는 분들은 기본 멘트로 통일
+        { n: "김태욱", s: "입시", r: "KAIST", d: "대입 및 진로 컨설팅, 합격 노하우 및 경험 공유" },
+        { n: "박승호", s: "입시", r: "고려대 반도체", d: "대입 및 진로 컨설팅, 합격 노하우 및 경험 공유" },
+        { n: "오서현", s: "입시", r: "서울대 화생공", d: "대입 및 진로 컨설팅, 합격 노하우 및 경험 공유" },
+        { n: "이현서", s: "입시", r: "서울대 수리과학부", d: "대입 및 진로 컨설팅, 합격 노하우 및 경험 공유" },
+        { n: "임하은", s: "입시", r: "KAIST", d: "대입 및 진로 컨설팅, 합격 노하우 및 경험 공유" },
+        { n: "유민혁", s: "입시", r: "Postech", d: "대입 및 진로 컨설팅, 합격 노하우 및 경험 공유" },
+        { n: "차하준", s: "입시", r: "KAIST", d: "대입 및 진로 컨설팅, 합격 노하우 및 경험 공유" }
     ];
 
     const colors = { "수학":"var(--math)", "물리":"var(--phys)", "화학":"var(--chem)", "생명":"var(--bio)", "지구":"var(--earth)", "정보":"var(--info)", "입시":"var(--ipsi)" };
@@ -138,18 +179,34 @@
                 <div class="role">${m.r}</div>
                 <div class="desc">${m.d}</div>
                 <div class="action-area">
-                    <button class="contact-btn" id="btn-${i}" onclick="show('${i}')">카카오톡 ID 확인하기</button>
-                    <div class="id-display" id="id-${i}">ID: ${m.k}</div>
+                    <button class="contact-btn" onclick="openModal()">신청하기</button>
                 </div>
             `;
             list.appendChild(card);
         });
     }
 
-    function show(i) {
-        if(confirm("개인 연락처이므로 연구 목적으로만 사용해 주세요.\n해당 학우에게 연락하시겠습니까?")) {
-            document.getElementById(`btn-${i}`).style.display = 'none';
-            document.getElementById(`id-${i}`).style.display = 'block';
+    // 모달 제어 함수
+    const modal = document.getElementById('modalOverlay');
+    
+    function openModal() {
+        modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+    }
+
+    function goToForm() {
+        // 구글 폼 새 창으로 열기
+        window.open('https://forms.gle/ujPqhUxS5cWXBCHM7', '_blank');
+        closeModal();
+    }
+
+    // 모달 바깥 영역 클릭 시 닫기
+    window.onclick = function(event) {
+        if (event.target === modal) {
+            closeModal();
         }
     }
 
